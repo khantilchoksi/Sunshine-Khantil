@@ -20,15 +20,20 @@ public class MainActivity extends ActionBarActivity {
      */
     private GoogleApiClient client;
 
+    private String mLocation;
+    private final String FORECASTFRAGMENT_TAG = "FFTAG";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        mLocation = Utility.getPreferredLocation(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.container, new ForecastFragment())
+                    .add(R.id.container, new ForecastFragment(),FORECASTFRAGMENT_TAG)
                     .commit();
         }
+
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
@@ -54,6 +59,7 @@ public class MainActivity extends ActionBarActivity {
             startActivity(settingsIntent);
             return true;
         }
+
 
         return super.onOptionsItemSelected(item);
     }
@@ -96,6 +102,21 @@ public class MainActivity extends ActionBarActivity {
         );
         AppIndex.AppIndexApi.end(client, viewAction);
         client.disconnect();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        String location = Utility.getPreferredLocation(this);
+        if (location!= null && !location.equals(mLocation)){
+            ForecastFragment ff = (ForecastFragment)getSupportFragmentManager().findFragmentByTag(FORECASTFRAGMENT_TAG);
+            if(ff != null){
+                ff.onLocationChanged();
+            }
+
+            mLocation = location;
+        }
+
     }
 
     /**
