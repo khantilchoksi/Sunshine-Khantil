@@ -25,6 +25,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import com.example.android.sunshine.app.data.WeatherContract;
+import com.example.android.sunshine.app.service.SunshineService;
 
 import android.support.v4.app.Fragment;
 import android.support.v4.content.CursorLoader;
@@ -220,13 +221,19 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         FetchWeatherTask weatherTask = new FetchWeatherTask(getActivity());
         String location = Utility.getPreferredLocation(getActivity());
         weatherTask.execute(location);
+
+//        //After learning services
+//        Intent intent = new Intent(getActivity(), SunshineService.class);
+//        intent.putExtra(SunshineService.LOCATION_QUERY_EXTRA,
+//                Utility.getPreferredLocation(getActivity()));
+//        getActivity().startService(intent);
     }
 
-    /*@Override
+    @Override
     public void onStart(){
         super.onStart();
         updateWeather();
-    }*/
+    }
 
     private void openPreferredLocationMap(){
         /*SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getActivity());

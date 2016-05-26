@@ -10,5 +10,4 @@
         android:id="@+id/action_location"
         android:title="@string/action_location" />
 
-
 </menu>
