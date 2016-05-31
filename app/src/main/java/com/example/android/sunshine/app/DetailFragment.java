@@ -91,7 +91,7 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
                              Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_detail, container, false);
 
-            Intent intent = getActivity().getIntent();
+//            Intent intent = getActivity().getIntent();
 
             /*if(intent!=null && intent.hasExtra(Intent.EXTRA_TEXT)){
                 forecastStr = intent.getStringExtra(Intent.EXTRA_TEXT);
@@ -116,7 +116,7 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         mWindView = (TextView) rootView.findViewById(R.id.detail_wind_textview);
         mPressureView = (TextView) rootView.findViewById(R.id.detail_pressure_textview);
 
-        return inflater.inflate(R.layout.fragment_detail, container, false);
+        return rootView;
     }
 
 
@@ -155,7 +155,7 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         Log.v(LOG_TAG, "In onCreateLoader");
         Intent intent = getActivity().getIntent();
-        if (intent == null) {
+        if (intent == null || intent.getData() == null) {
             return null;
         }
 
@@ -181,7 +181,8 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         int weatherId = data.getInt(COL_WEATHER_CONDITION_ID);
 
         // Use placeholder Image
-        mIconView.setImageResource(R.drawable.ic_launcher);
+//        mIconView.setImageResource(R.drawable.ic_launcher);
+        mIconView.setImageResource(Utility.getArtResourceForWeatherCondition(weatherId));
 
         long date = data.getLong(COL_WEATHER_DATE);
         String friendlyDateText = Utility.getDayName(getActivity(), date);
