@@ -20,6 +20,7 @@ public class ForecastAdapter extends CursorAdapter{
     private final int VIEW_TYPE_FURTHER_DAY = 1;
     private final int VIEW_TYPE_COUNT = 2;
 
+    private boolean mUseTodayLayout = true;
 
     /**
      * Cache of the children views for a forecast list item.
@@ -49,9 +50,13 @@ public class ForecastAdapter extends CursorAdapter{
         return VIEW_TYPE_COUNT;
     }
 
+    public void setUseTodayLayout( boolean useTodayLayout){
+        mUseTodayLayout = useTodayLayout;
+    }
+
     @Override
     public int getItemViewType(int position) {
-        return (position == 0)? VIEW_TYPE_TODAY : VIEW_TYPE_FURTHER_DAY;
+        return (position == 0 && mUseTodayLayout)? VIEW_TYPE_TODAY : VIEW_TYPE_FURTHER_DAY;
     }
 
 //    /**
@@ -157,6 +162,9 @@ public class ForecastAdapter extends CursorAdapter{
 //        TextView descriptionView = (TextView) view.findViewById(R.id.list_item_forecast_textview);
 //        descriptionView.setText(description);
         viewHolder.descriptionView.setText(description);
+
+        //Add a description to image for talkback accessibility
+        viewHolder.iconView.setContentDescription(description);
 
         // Read user preference for metric or imperial temperature units
         boolean isMetric = Utility.isMetric(context);

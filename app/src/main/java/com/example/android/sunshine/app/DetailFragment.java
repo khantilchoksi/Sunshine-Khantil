@@ -6,6 +6,7 @@ package com.example.android.sunshine.app;
 
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
@@ -29,6 +30,7 @@ import com.example.android.sunshine.app.data.WeatherContract;
  * A placeholder fragment containing a simple view.
  */
 public class DetailFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>{
+
 
     private static final String[] FORECAST_COLUMNS = {
             // In this case the id needs to be fully qualified with a table name, since
@@ -77,6 +79,9 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
 
     final int DETAIL_LOADER = 0;
 
+    static final String DETAIL_URI = "URI";
+    private Uri mUri;
+
     private ShareActionProvider mShareActionProvider;
     private static final String LOG_TAG = DetailFragment.class.getSimpleName();
 
@@ -91,6 +96,10 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
                              Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_detail, container, false);
 
+        Bundle arguments = getArguments();
+        if(arguments != null){
+            mUri = arguments.getParcelable(DetailFragment.DETAIL_URI);
+        }
 //            Intent intent = getActivity().getIntent();
 
             /*if(intent!=null && intent.hasExtra(Intent.EXTRA_TEXT)){
@@ -117,6 +126,16 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         mPressureView = (TextView) rootView.findViewById(R.id.detail_pressure_textview);
 
         return rootView;
+    }
+
+    public void onLocationChanged(String newLocation){
+        Uri uri = mUri;
+        if( uri != null){
+            long date = WeatherContract.WeatherEntry.getDateFromUri(uri);
+            Uri updateUri = WeatherContract.WeatherEntry.buildWeatherLocationWithDate(newLocation, date);
+            mUri = updateUri;
+            getLoaderManager().restartLoader(DETAIL_LOADER,null, this);
+        }
     }
 
 
@@ -153,20 +172,21 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        Log.v(LOG_TAG, "In onCreateLoader");
+        /*Log.v(LOG_TAG, "In onCreateLoader");
         Intent intent = getActivity().getIntent();
         if (intent == null || intent.getData() == null) {
             return null;
-        }
-
+        }*/
+        if( mUri != null)
         return new CursorLoader(
                 getActivity(),
-                intent.getData(),
+                mUri,
                 FORECAST_COLUMNS,
                 null,
                 null,
                 null
         );
+        return null;
     }
 
     @Override
@@ -193,6 +213,8 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         //Read weather description
         String description = data.getString(COL_WEATHER_DESC);
         mDescriptionView.setText(description);
+
+        mIconView.setContentDescription(description);
 
 
         boolean isMetric = Utility.isMetric(getActivity());

@@ -13,7 +13,7 @@ import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity implements ForecastFragment.Callback{
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -53,9 +53,12 @@ public class MainActivity extends ActionBarActivity {
         }else{
             Log.d(LOG_TAG, "Two Pane Layout is not there!");
             mTwoPane = false;
+            //not to show the shadow below the action bar when it is not the two pane mode
+            getSupportActionBar().setElevation(0f);
         }
 
-
+        ForecastFragment forecastFragment = ((ForecastFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_forecast));
+        forecastFragment.setUseTodayLayout(!mTwoPane);
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
@@ -139,9 +142,41 @@ public class MainActivity extends ActionBarActivity {
                 ff.onLocationChanged();
             }
 
+            DetailFragment df = (DetailFragment)getSupportFragmentManager().findFragmentByTag(DETAILFRAGMENT_TAG);
+            if( df != null){
+                df.onLocationChanged(location);
+            }
+
             mLocation = location;
         }
 
+    }
+
+    @Override
+    public void onItemSelected(Uri dateUri) {
+        if(mTwoPane){
+            //That is table two pane view is there
+            // In two-pane mode, show the detail view in this activity by
+            // adding or replacing the detail fragment using a
+            // fragment transaction.
+            Bundle args = new Bundle();
+            args.putParcelable(DetailFragment.DETAIL_URI,dateUri);
+
+            DetailFragment detailFragment = new DetailFragment();
+            detailFragment.setArguments(args);
+
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.weather_detail_container, detailFragment, DETAILFRAGMENT_TAG)
+                    .commit();
+
+
+
+        }else{
+            //phone view
+            Intent intent = new Intent(this, DetailActivity.class)
+                    .setData(dateUri);
+            startActivity(intent);
+        }
     }
 
     /**
