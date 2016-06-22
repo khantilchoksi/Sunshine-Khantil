@@ -46,13 +46,17 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.example.android.sunshine.app.MainActivity" />
         </activity>
+
         <activity
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings"
-            android:icon="@mipmap/ic_launcher"
+            android:parentActivityName=".MainActivity"
             android:theme="@style/SettingsTheme">
-
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.example.android.sunshine.app.MainActivity" />
         </activity>
+
 <!--
         <provider
             android:authorities="com.example.android.sunshine.app"

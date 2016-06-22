@@ -57,7 +57,8 @@ import java.util.ArrayList;
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class ForecastFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>{
 
-    private ForecastAdapter forecastAdapter;
+    private ForecastAdapter mForecastAdapter;
+    private final String LOG_TAG = ForecastFragment.class.getSimpleName();
 
     private AlarmManager alarmMgr;
     private PendingIntent alarmIntent;
@@ -139,13 +140,14 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_refresh) {
+/*        if (id == R.id.action_refresh) {
             //FetchWeatherTask weatherTask = new FetchWeatherTask();
             //weatherTask.execute();
             updateWeather();
             return true;
-        } else if(id == R.id.action_location) {
-            openPreferredLocationMap();
+        }*/
+        if(id == R.id.action_location) {
+            openPreferredLocationInMap();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -187,7 +189,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         }
 
         //Leverages loader lesson
-        forecastAdapter = new ForecastAdapter(getActivity(), null, 0);
+        mForecastAdapter = new ForecastAdapter(getActivity(), null, 0);
 
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
@@ -215,8 +217,8 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
                 new ArrayList<String>());*/
 
         mListView = (ListView) rootView.findViewById(R.id.listView_forecast);
-        mListView.setAdapter(forecastAdapter);
-        forecastAdapter.setUseTodayLayout(mUseTodayLayout);
+        mListView.setAdapter(mForecastAdapter);
+        mForecastAdapter.setUseTodayLayout(mUseTodayLayout);
 
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -262,8 +264,8 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
 
     public void setUseTodayLayout(boolean useTodayLayout){
         mUseTodayLayout = useTodayLayout;
-        if(forecastAdapter != null){
-            forecastAdapter.setUseTodayLayout(mUseTodayLayout);
+        if(mForecastAdapter != null){
+            mForecastAdapter.setUseTodayLayout(mUseTodayLayout);
         }
     }
 
@@ -306,11 +308,11 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         updateWeather();
     }
 
-    private void openPreferredLocationMap(){
+    private void openPreferredLocationInMap(){
         /*SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String loc = pref.getString(getString(R.string.pref_location_key), getString(R.string.pref_location_default));*/
 
-        String loc = Utility.getPreferredLocation(getActivity());
+/*        String loc = Utility.getPreferredLocation(getActivity());
 
         Uri geoLocation = Uri.parse("geo:0,0?").buildUpon().
                 appendQueryParameter("q",loc).build();
@@ -319,6 +321,27 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         intent.setData(geoLocation);
         if(intent.resolveActivity(getActivity().getPackageManager()) != null){
             startActivity(intent);
+        }*/
+
+        if ( null != mForecastAdapter ) {
+            Cursor c = mForecastAdapter.getCursor();
+            if ( null != c ) {
+                c.moveToPosition(0);
+                String posLat = c.getString(COL_COORD_LAT);
+                String posLong = c.getString(COL_COORD_LONG);
+                Uri geoLocation = Uri.parse("geo:" + posLat + "," + posLong);
+
+
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(geoLocation);
+
+                if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
+                    startActivity(intent);
+                } else {
+                    Log.d(LOG_TAG, "Couldn't call " + geoLocation.toString() + ", no receiving apps installed!");
+                }
+            }
+
         }
     }
 
@@ -346,7 +369,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-            forecastAdapter.swapCursor(data);
+            mForecastAdapter.swapCursor(data);
         if(mPosition != ListView.INVALID_POSITION){
             mListView.smoothScrollToPosition(mPosition);
         }
@@ -354,7 +377,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
-            forecastAdapter.swapCursor(null);
+            mForecastAdapter.swapCursor(null);
     }
 
 
