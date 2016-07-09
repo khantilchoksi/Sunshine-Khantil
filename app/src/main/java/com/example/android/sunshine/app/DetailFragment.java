@@ -215,7 +215,12 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         String description = data.getString(COL_WEATHER_DESC);
         mDescriptionView.setText(description);
 
-        mIconView.setContentDescription(description);
+//        mIconView.setContentDescription(description);
+        // For accessibility, add a content description to the icon field. Because the ImageView
+        // is independently focusable, it's better to have a description of the image. Using
+        // null is appropriate when the image is purely decorative or when the image already
+        // has text describing it in the same UI component.
+        mIconView.setContentDescription(getString(R.string.a11y_forecast_icon,description));
 
 
         boolean isMetric = Utility.isMetric(getActivity());
@@ -223,20 +228,25 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         double high = data.getDouble(COL_WEATHER_MAX_TEMP);
         String hightTempreture = Utility.formatTemperature(getActivity(), high, isMetric);
         mHighTempView.setText(hightTempreture);
+        mHighTempView.setContentDescription(getString(R.string.a11y_high_temp,hightTempreture));
 
         double low = data.getDouble(COL_WEATHER_MIN_TEMP);
         String lowTempreture = Utility.formatTemperature(getActivity(), low, isMetric);
         mLowTempView.setText(lowTempreture);
+        mLowTempView.setContentDescription(getString(R.string.a11y_low_temp,lowTempreture));
 
         float humidity = data.getFloat(COL_WEATHER_HUMIDITY);
         mHumidityView.setText(getActivity().getString(R.string.format_humidity,humidity));
+        mHumidityView.setContentDescription(mHumidityView.getText());
 
         float windSpeedDir = data.getFloat(COL_WEATHER_WIND_SPEED);
         float windDirStr = data.getFloat(COL_WEATHER_DEGREES);
         mWindView.setText(Utility.getFormattedWind(getActivity(),windSpeedDir, windDirStr));
+        mWindView.setContentDescription(mWindView.getText());
 
         float pressure = data.getFloat(COL_WEATHER_PRESSURE);
         mPressureView.setText(getActivity().getString(R.string.format_pressure, pressure));
+        mPressureView.setContentDescription(mPressureView.getText());
 
         // We still need this for the share intent
         mForecast = String.format("%s - %s - %s/%s", dateText, description, high, low);
