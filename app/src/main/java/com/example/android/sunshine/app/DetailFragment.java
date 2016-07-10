@@ -24,6 +24,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.example.android.sunshine.app.data.WeatherContract;
 
 /**
@@ -203,7 +204,12 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
 
         // Use placeholder Image
 //        mIconView.setImageResource(R.drawable.ic_launcher);
-        mIconView.setImageResource(Utility.getArtResourceForWeatherCondition(weatherId));
+//        mIconView.setImageResource(Utility.getArtResourceForWeatherCondition(weatherId));
+        Glide.with(this)
+                .load(Utility.getArtUrlForWeatherCondition(getActivity(),weatherId))
+                .error(Utility.getArtResourceForWeatherCondition(weatherId))
+                .crossFade()
+                .into(mIconView);
 
         long date = data.getLong(COL_WEATHER_DATE);
         String friendlyDateText = Utility.getDayName(getActivity(), date);
@@ -226,12 +232,12 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         boolean isMetric = Utility.isMetric(getActivity());
 
         double high = data.getDouble(COL_WEATHER_MAX_TEMP);
-        String hightTempreture = Utility.formatTemperature(getActivity(), high, isMetric);
+        String hightTempreture = Utility.formatTemperature(getActivity(), high);
         mHighTempView.setText(hightTempreture);
         mHighTempView.setContentDescription(getString(R.string.a11y_high_temp,hightTempreture));
 
         double low = data.getDouble(COL_WEATHER_MIN_TEMP);
-        String lowTempreture = Utility.formatTemperature(getActivity(), low, isMetric);
+        String lowTempreture = Utility.formatTemperature(getActivity(), low);
         mLowTempView.setText(lowTempreture);
         mLowTempView.setContentDescription(getString(R.string.a11y_low_temp,lowTempreture));
 

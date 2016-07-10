@@ -27,7 +27,8 @@
             android:layout_height="wrap_content"
             android:id="@+id/list_item_icon"
             android:src="@drawable/ic_cloudy"
-            android:layout_gravity="center" />
+            android:layout_gravity="center"
+            android:adjustViewBounds="true"/>
     </FrameLayout>
 
 
