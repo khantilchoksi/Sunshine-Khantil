@@ -1,17 +1,23 @@
 package com.example.android.sunshine.app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
+import com.example.android.sunshine.app.gcm.RegistrationIntentService;
 import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
-import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
+/*import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.GoogleApiClient;*/
 
 
 public class MainActivity extends ActionBarActivity implements ForecastFragment.Callback{
@@ -20,12 +26,14 @@ public class MainActivity extends ActionBarActivity implements ForecastFragment.
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
-    private GoogleApiClient client;
+//    private GoogleApiClient client;
 
     private String mLocation;
 //    private final String FORECASTFRAGMENT_TAG = "FFTAG";
     private static final String DETAILFRAGMENT_TAG = "DFTAG";
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
+    private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
+    public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
 
     private boolean mTwoPane;
 
@@ -60,11 +68,28 @@ public class MainActivity extends ActionBarActivity implements ForecastFragment.
 
         ForecastFragment forecastFragment = ((ForecastFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_forecast));
         forecastFragment.setUseTodayLayout(!mTwoPane);
+        /*
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();*/
 
         SunshineSyncAdapter.initializeSyncAdapter(this);
+
+        // If Google Play Services is up to date, we'll want to register GCM. If it is not, we'll
+        // skip the registration and this device will not receive any downstream messages from
+        // our fake server. Because weather alerts are not a core feature of the app, this should
+        // not affect the behavior of the app, from a user perspective.
+        if (checkPlayServices()) {
+            // Because this is the initial creation of the app, we'll want to be certain we have
+            // a token. If we do not, then we will start the IntentService that will register this
+            // application with GCM.
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+            boolean sentToken = sharedPreferences.getBoolean(SENT_TOKEN_TO_SERVER, false);
+            if(!sentToken){
+                Intent intent = new Intent(this, RegistrationIntentService.class);
+                startService(intent);
+            }
+        }
     }
 
     @Override
@@ -92,7 +117,7 @@ public class MainActivity extends ActionBarActivity implements ForecastFragment.
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
+    /*@Override
     public void onStart() {
         super.onStart();
 
@@ -110,9 +135,9 @@ public class MainActivity extends ActionBarActivity implements ForecastFragment.
                 Uri.parse("android-app://com.example.android.sunshine.app/http/host/path")
         );
         AppIndex.AppIndexApi.start(client, viewAction);
-    }
+    }*/
 
-    @Override
+    /*@Override
     public void onStop() {
         super.onStop();
 
@@ -130,7 +155,7 @@ public class MainActivity extends ActionBarActivity implements ForecastFragment.
         );
         AppIndex.AppIndexApi.end(client, viewAction);
         client.disconnect();
-    }
+    }*/
 
     @Override
     protected void onResume() {
@@ -183,8 +208,23 @@ public class MainActivity extends ActionBarActivity implements ForecastFragment.
     }
 
     /**
-     * A placeholder fragment containing a simple view.
+     * Check the device if it has google play services
      */
+
+    private boolean checkPlayServices(){
+        GoogleApiAvailability googleApiAvailability = GoogleApiAvailability.getInstance();
+        int resultCode = googleApiAvailability.isGooglePlayServicesAvailable(this);
+        if(resultCode != ConnectionResult.SUCCESS){
+            if(googleApiAvailability.isUserResolvableError(resultCode)){
+                googleApiAvailability.getErrorDialog(this, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST).show();
+            }else{
+                Log.i(LOG_TAG,"This device is not supported");
+                finish();
+            }
+            return false;
+        }
+        return true;
+    }
 
 
 }

@@ -1,0 +1,35 @@
+{
+  "project_info": {
+    "project_number": "917320331963",
+    "project_id": "sunshine-khantil"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:917320331963:android:b291f3d88395c050",
+        "android_client_info": {
+          "package_name": "com.example.khantil"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDwgDw7pzFxIyTL3r2hBELfrHmI8cqz0I"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
