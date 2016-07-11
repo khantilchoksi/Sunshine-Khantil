@@ -41,6 +41,7 @@ public class MyGcmListenerService extends GcmListenerService {
     public void onMessageReceived(String from, Bundle data) {
         // Time to unparcel the bundle!
         if (!data.isEmpty()) {
+            Log.d("LOG_TAG","GCM : data : "+data);
             // TODO: gcm_default sender ID comes from the API console
             String senderId = getString(R.string.gcm_defaultSenderId);
             if (senderId.length() == 0) {
@@ -59,6 +60,7 @@ public class MyGcmListenerService extends GcmListenerService {
                 } catch (JSONException e) {
                     // JSON parsing failed, so we just let this message go, since GCM is not one
                     // of our critical features.
+                    e.printStackTrace();
                 }
             }
             Log.i(TAG, "Received: " + data.toString());

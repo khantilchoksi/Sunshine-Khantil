@@ -20,7 +20,8 @@
     <permission android:name="com.example.android.sunshine.app.permission.C2D_MESSAGE"
         android:protectionLevel="signature" />
     <uses-permission android:name="com.example.android.sunshine.app.permission.C2D_MESSAGE" />
-    
+
+
 
     <application
         android:allowBackup="true"
@@ -66,10 +67,10 @@
                 android:value="com.example.android.sunshine.app.MainActivity" />
         </activity>
 
-<!--
-        <provider
-            android:authorities="com.example.android.sunshine.app"
-            android:name=".data.WeatherProvider"/>-->
+        <!--
+                <provider
+                    android:authorities="com.example.android.sunshine.app"
+                    android:name=".data.WeatherProvider"/>-->
 
         <provider
             android:authorities="@string/content_authority"
@@ -77,10 +78,10 @@
             android:exported="false"
             android:syncable="true" />
 
-<!--        <service android:name=".service.SunshineService"/>
+        <!--        <service android:name=".service.SunshineService"/>
 
-        <receiver android:name=".service.SunshineService$AlarmReceiver"
-            android:enabled="true"/>-->
+                <receiver android:name=".service.SunshineService$AlarmReceiver"
+                    android:enabled="true"/>-->
 
 
         <!-- SyncAdapter's dummy authentication service -->
@@ -120,13 +121,15 @@
                 <category android:name="com.example.android.sunshine.app" />
             </intent-filter>
         </receiver>
+
         <service
-            android:name="gcm.MyGcmListenerService"
+            android:name="com.example.android.sunshine.app.gcm.MyGcmListenerService"
             android:exported="false" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
             </intent-filter>
         </service>
+
         <service
             android:name="gcm.MyInstanceIDListenerService"
             android:exported="false">
@@ -134,6 +137,7 @@
                 <action android:name="com.google.android.gms.iid.InstanceID"/>
             </intent-filter>
         </service>
+
         <service
             android:name=".gcm.RegistrationIntentService"
             android:exported="false" >
@@ -141,6 +145,6 @@
 
 
     </application>
-    
+
 
 </manifest>
