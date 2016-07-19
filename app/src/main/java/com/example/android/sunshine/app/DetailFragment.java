@@ -87,7 +87,7 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
     static final String DETAIL_URI = "URI";
     private Uri mUri;
 
-    private ShareActionProvider mShareActionProvider;
+//    private ShareActionProvider mShareActionProvider;
     private static final String LOG_TAG = DetailFragment.class.getSimpleName();
 
     String mForecast;
@@ -101,7 +101,7 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_detail, container, false);
+            View rootView = inflater.inflate(R.layout.fragment_detail_start, container, false);
 
         Bundle arguments = getArguments();
         if(arguments != null){
@@ -194,6 +194,7 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
                 null,
                 null
         );
+        getView().setVisibility(View.INVISIBLE);
         return null;
     }
 
@@ -204,6 +205,8 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
             Log.v(LOG_TAG," Not fetched any rows");
             return;
         }
+
+        getView().setVisibility(View.VISIBLE);
 
         // Read weather condition ID from cursor
         int weatherId = data.getInt(COL_WEATHER_CONDITION_ID);
@@ -270,10 +273,10 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         mForecast = String.format("%s - %s - %s/%s", dateText, description, high, low);
         Log.v(LOG_TAG,mForecast);
 
-        // If onCreateOptionsMenu has already happened, we need to update the share intent now.
+        /*// If onCreateOptionsMenu has already happened, we need to update the share intent now.
         if (mShareActionProvider != null) {
             mShareActionProvider.setShareIntent(createShareForecastIntent());
-        }
+        }*/
 
         AppCompatActivity activity = (AppCompatActivity)getActivity();
         Toolbar toolbarView = (Toolbar) getView().findViewById(R.id.toolbar);
