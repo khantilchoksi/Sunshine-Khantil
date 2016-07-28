@@ -17,6 +17,8 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -61,7 +63,6 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         SharedPreferences.OnSharedPreferenceChangeListener{
 
     private ForecastAdapter mForecastAdapter;
-    private TextView mNoWeatherInfoTextView;
     private final String LOG_TAG = ForecastFragment.class.getSimpleName();
 
     private AlarmManager alarmMgr;
@@ -101,15 +102,16 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     static final int COL_COORD_LAT = 7;
     static final int COL_COORD_LONG = 8;
 
-    private ListView mListView;
-    private int mPosition = ListView.INVALID_POSITION;
-    static final String STATE_POSITION = "STATE_POSITION";
+    private RecyclerView mRecyclerView;
+    private int mPosition = RecyclerView.NO_POSITION;
+    private static final String SELECTED_KEY = "selected_position";
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         //Save the current position
-        if(mPosition != ListView.INVALID_POSITION){
-            outState.putInt(STATE_POSITION,mPosition);
+        // When no item is selected, mPosition will be set to RecyclerView.INVALID_POSITION,
+        if(mPosition != RecyclerView.NO_POSITION){
+            outState.putInt(SELECTED_KEY,mPosition);
         }
 
         super.onSaveInstanceState(outState);
@@ -197,14 +199,6 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
 
         forecastAdapter = new ForecastAdapter(getActivity(),cur, 0);*/
 
-        if(savedInstanceState!= null && savedInstanceState.containsKey(STATE_POSITION)){
-            mPosition = savedInstanceState.getInt(STATE_POSITION);
-        }
-
-        //Leverages loader lesson
-        mForecastAdapter = new ForecastAdapter(getActivity(), null, 0);
-
-
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
         /* Previous Static data
@@ -230,49 +224,44 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
                 //list of string that is forecast data
                 new ArrayList<String>());*/
 
-        mListView = (ListView) rootView.findViewById(R.id.listView_forecast);
-        mNoWeatherInfoTextView = (TextView) rootView.findViewById(R.id.noWeatherInfo);
-        mListView.setEmptyView(mNoWeatherInfoTextView);
+        mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView_forecast);
+        // Set the layout manager
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
-        mListView.setAdapter(mForecastAdapter);
-        mForecastAdapter.setUseTodayLayout(mUseTodayLayout);
+        View emptyView = (TextView) rootView.findViewById(R.id.recyclerview_forecast_empty);
 
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        // use this setting to improve performance if you know that changes
+        // in content do not change the layout size of the RecyclerView
+        mRecyclerView.setHasFixedSize(true);
+
+        // The ForecastAdapter will take data from a source and
+        // use it to populate the RecyclerView it's attached to.
+
+        mForecastAdapter = new ForecastAdapter(getActivity(), new ForecastAdapter.ForecastAdapterOnClickHandler() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
-
-                /*String forecast = forecastAdapter.getItem(position);
-
-                CharSequence text = (CharSequence) forecastAdapter.getItem(position);
-                int duration = Toast.LENGTH_SHORT;
-
-                Toast toast = Toast.makeText(getActivity(),text,duration);
-                toast.show();
-
-                Intent detailActivityIntent = new Intent(getActivity(), DetailActivity.class).putExtra(Intent.EXTRA_TEXT, forecast);
-                startActivity(detailActivityIntent);*/
-
-                Cursor cursor = (Cursor) parent.getItemAtPosition(position);
-
-                if (cursor != null) {
-                    String locationSetting = Utility.getPreferredLocation(getActivity());
-                    /*Intent intent = new Intent(getActivity(), DetailActivity.class)
-                            .setData(WeatherContract.WeatherEntry.buildWeatherLocationWithDate(locationSetting, cursor.getLong(COL_WEATHER_DATE)));
-                    startActivity(intent);*/
-                    ((Callback) getActivity()).
-                            onItemSelected(WeatherContract.WeatherEntry.
-                                    buildWeatherLocationWithDate(locationSetting, cursor.getLong(COL_WEATHER_DATE)
-                                    ));
-                }
-
-                //Also save the position to the member variable
-                mPosition = position;
-
+            public void onClick(Long date, ForecastAdapter.ForecastAdapterViewHolder vh) {
+                String locationString = Utility.getPreferredLocation(getActivity());
+                ((Callback) getActivity()).onItemSelected(
+                        WeatherContract.WeatherEntry.buildWeatherLocationWithDate(locationString, date)
+                );
+                mPosition = vh.getAdapterPosition();
             }
-        });
+        }, emptyView);
 
+        mRecyclerView.setAdapter(mForecastAdapter);
 
+        // If there's instance state, mine it for useful information.
+        // The end-goal here is that the user never knows that turning their device sideways
+        // does crazy lifecycle related things.  It should feel like some stuff stretched out,
+        // or magically appeared to take advantage of room, but data or place in the app was never
+        // actually *lost*.
+        if (savedInstanceState != null && savedInstanceState.containsKey(SELECTED_KEY)) {
+            // The Recycler View probably hasn't even been populated yet.  Actually perform the
+            // swapout in onLoadFinished.
+            mPosition = savedInstanceState.getInt(SELECTED_KEY);
+        }
+
+        mForecastAdapter.setUseTodayLayout(mUseTodayLayout);
 
         return rootView;
     }
@@ -404,16 +393,16 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         mForecastAdapter.swapCursor(data);
-        if(mPosition != ListView.INVALID_POSITION){
-            mListView.smoothScrollToPosition(mPosition);
+        if(mPosition != RecyclerView.NO_POSITION){
+            mRecyclerView.smoothScrollToPosition(mPosition);
         }
-
         updateEmptyView();
     }
 
     private void updateEmptyView() {
-        if(mForecastAdapter.isEmpty()){
-            if(null!= mNoWeatherInfoTextView){
+        if(mForecastAdapter.getItemCount() == 0){
+            TextView tv = (TextView) getView().findViewById(R.id.recyclerview_forecast_empty);
+            if(null!= tv){
                 int message = R.string.no_weather_info;
 
                 @SunshineSyncAdapter.LocationStatus int locationStatus = Utility.getLocationStatus(getActivity());
@@ -432,7 +421,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
                         }
                 }
 
-                mNoWeatherInfoTextView.setText(message);
+                tv.setText(message);
             }
         }
     }
@@ -443,7 +432,9 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     }
 
 
-    /*public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
+    /*
+    Simple ASYNC TASK for future reference
+    public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
 
         private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
 

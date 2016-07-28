@@ -14,6 +14,7 @@ import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.ShareActionProvider;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -23,6 +24,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -101,29 +103,14 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_detail_start, container, false);
 
         Bundle arguments = getArguments();
         if(arguments != null){
             mUri = arguments.getParcelable(DetailFragment.DETAIL_URI);
         }
-//            Intent intent = getActivity().getIntent();
 
-            /*if(intent!=null && intent.hasExtra(Intent.EXTRA_TEXT)){
-                forecastStr = intent.getStringExtra(Intent.EXTRA_TEXT);
-            }
-
-            if(intent != null){
-                forecastStr = intent.getDataString();
-            }
-
-            if( null != forecastStr){
-                ((TextView) rootView.findViewById(R.id.detail_text))
-                        .setText(forecastStr);
-            }*/
-
+        View rootView = inflater.inflate(R.layout.fragment_detail_start, container, false);
         mIconView = (ImageView) rootView.findViewById(R.id.detail_icon);
-
         mDateView = (TextView) rootView.findViewById(R.id.detail_date_textview);
         mDescriptionView = (TextView) rootView.findViewById(R.id.detail_forecast_textview);
         mHighTempView = (TextView) rootView.findViewById(R.id.detail_high_textview);
@@ -194,7 +181,13 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
                 null,
                 null
         );
-        getView().setVisibility(View.INVISIBLE);
+
+//        getView().setVisibility(View.INVISIBLE);
+        //For cardview
+        ViewParent vp = getView().getParent();
+        if(vp instanceof CardView){
+            ((View) vp).setVisibility(View.INVISIBLE);
+        }
         return null;
     }
 
@@ -206,8 +199,11 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
             return;
         }
 
-        getView().setVisibility(View.VISIBLE);
-
+//        getView().setVisibility(View.VISIBLE);
+        ViewParent vp = getView().getParent();
+        if(vp instanceof CardView){
+            ((View) vp).setVisibility(View.VISIBLE);
+        }
         // Read weather condition ID from cursor
         int weatherId = data.getInt(COL_WEATHER_CONDITION_ID);
 
