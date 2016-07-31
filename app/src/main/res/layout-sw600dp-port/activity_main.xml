@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -13,7 +12,7 @@
         android:layout_alignParentTop="true"
         app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-        android:background="@color/primary"/>
+        android:background="@color/primary" />
 
     <ImageView
         android:id="@+id/sunshine_logo_imageview"
@@ -53,5 +52,7 @@
         android:layout_width="match_parent"
         android:layout_below="@id/weather_detail_container"
         tools:layout="@android:layout/list_content"
+        android:choiceMode="singleChoice"
+        app:autoSelectView="true"
         />
 </RelativeLayout>

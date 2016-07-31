@@ -2,12 +2,14 @@ package com.example.android.sunshine.app;
 
 import android.annotation.TargetApi;
 //import android.app.LoaderManager;
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 //import android.content.Loader;
 import android.content.SharedPreferences;
+import android.content.res.TypedArray;
 import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.Uri;
@@ -16,10 +18,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
+import android.support.design.widget.AppBarLayout;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.Time;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -27,6 +32,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -60,7 +67,7 @@ import java.util.ArrayList;
 
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class ForecastFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>,
-        SharedPreferences.OnSharedPreferenceChangeListener{
+        SharedPreferences.OnSharedPreferenceChangeListener {
 
     private ForecastAdapter mForecastAdapter;
     private final String LOG_TAG = ForecastFragment.class.getSimpleName();
@@ -68,7 +75,8 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     private AlarmManager alarmMgr;
     private PendingIntent alarmIntent;
 
-    private boolean mUseTodayLayout;
+    private boolean mUseTodayLayout, mAutoSelectView;
+    private int mChoiceMode;
 
     private static final int FORECAST_LOADER = 0;
 
@@ -105,21 +113,22 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     private RecyclerView mRecyclerView;
     private int mPosition = RecyclerView.NO_POSITION;
     private static final String SELECTED_KEY = "selected_position";
+    private boolean mHoldForTransition;
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         //Save the current position
         // When no item is selected, mPosition will be set to RecyclerView.INVALID_POSITION,
-        if(mPosition != RecyclerView.NO_POSITION){
-            outState.putInt(SELECTED_KEY,mPosition);
+        if (mPosition != RecyclerView.NO_POSITION) {
+            outState.putInt(SELECTED_KEY, mPosition);
         }
-
+        mForecastAdapter.onSaveInstanceState(outState);
         super.onSaveInstanceState(outState);
     }
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if(key.equals(getString(R.string.pref_location_status_key))){
+        if (key.equals(getString(R.string.pref_location_status_key))) {
             //location status preference has been changed
             updateEmptyView();
         }
@@ -135,7 +144,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         /**
          * DetailFragmentCallback for when an item has been selected.
          */
-        public void onItemSelected(Uri dateUri);
+        public void onItemSelected(Uri dateUri, ForecastAdapter.ForecastAdapterViewHolder vh);
     }
 
     public ForecastFragment() {
@@ -161,7 +170,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
             updateWeather();
             return true;
         }*/
-        if(id == R.id.action_location) {
+        if (id == R.id.action_location) {
             openPreferredLocationInMap();
             return true;
         }
@@ -169,9 +178,25 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     }
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState){
-        getLoaderManager().initLoader(FORECAST_LOADER, null,this);
+    public void onActivityCreated(Bundle savedInstanceState) {
+        // We hold for transition here just in-case the activity
+        // needs to be re-created. In a standard return transition,
+        // this doesn't actually make a difference.
+        if (mHoldForTransition) {
+            getActivity().supportPostponeEnterTransition();
+        }
+        getLoaderManager().initLoader(FORECAST_LOADER, null, this);
         super.onActivityCreated(savedInstanceState);
+    }
+
+    @Override
+    public void onInflate(Activity activity, AttributeSet attrs, Bundle savedInstanceState) {
+        super.onInflate(activity, attrs, savedInstanceState);
+        TypedArray a = activity.obtainStyledAttributes(attrs, R.styleable.ForecastFragment, 0, 0);
+        mChoiceMode = a.getInt(R.styleable.ForecastFragment_android_choiceMode, AbsListView.CHOICE_MODE_NONE);
+        mAutoSelectView = a.getBoolean(R.styleable.ForecastFragment_autoSelectView, false);
+        mHoldForTransition = a.getBoolean(R.styleable.ForecastFragment_sharedElementTransitions, false);
+        a.recycle();
     }
 
 
@@ -224,7 +249,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
                 //list of string that is forecast data
                 new ArrayList<String>());*/
 
-        mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView_forecast);
+        mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerview_forecast);
         // Set the layout manager
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
@@ -242,42 +267,94 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
             public void onClick(Long date, ForecastAdapter.ForecastAdapterViewHolder vh) {
                 String locationString = Utility.getPreferredLocation(getActivity());
                 ((Callback) getActivity()).onItemSelected(
-                        WeatherContract.WeatherEntry.buildWeatherLocationWithDate(locationString, date)
+                        WeatherContract.WeatherEntry.buildWeatherLocationWithDate(locationString, date),
+                        vh
                 );
                 mPosition = vh.getAdapterPosition();
             }
-        }, emptyView);
+        }, emptyView, mChoiceMode);
 
         mRecyclerView.setAdapter(mForecastAdapter);
+
+        final View parallaxView = rootView.findViewById(R.id.parallax_bar);
+        if (null != parallaxView) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+                    @Override
+                    public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                        super.onScrolled(recyclerView, dx, dy);
+
+                        int max = parallaxView.getHeight();
+
+                        if (dy > 0) {
+                            parallaxView.setTranslationY(Math.max(-max, parallaxView.getTranslationY() - dy / 2));
+                        } else {
+                            parallaxView.setTranslationY(Math.min(0, parallaxView.getTranslationY() - dy / 2));
+                        }
+                    }
+                });
+            }
+        }
+
+        final AppBarLayout appbarView = (AppBarLayout) rootView.findViewById(R.id.appbar);
+        if( null != appbarView){
+            ViewCompat.setElevation(appbarView,0);
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+                mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+                    @Override
+                    public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                        if( 0 == mRecyclerView.computeVerticalScrollOffset()){
+                            appbarView.setElevation(0);
+                        }else{
+                            appbarView.setElevation(appbarView.getTargetElevation());
+                        }
+                    }
+                });
+            }
+        }
 
         // If there's instance state, mine it for useful information.
         // The end-goal here is that the user never knows that turning their device sideways
         // does crazy lifecycle related things.  It should feel like some stuff stretched out,
         // or magically appeared to take advantage of room, but data or place in the app was never
         // actually *lost*.
-        if (savedInstanceState != null && savedInstanceState.containsKey(SELECTED_KEY)) {
-            // The Recycler View probably hasn't even been populated yet.  Actually perform the
-            // swapout in onLoadFinished.
-            mPosition = savedInstanceState.getInt(SELECTED_KEY);
+        if (savedInstanceState != null) {
+            if (savedInstanceState.containsKey(SELECTED_KEY)) {
+                // The Recycler View probably hasn't even been populated yet.  Actually perform the
+                // swapout in onLoadFinished.
+                mPosition = savedInstanceState.getInt(SELECTED_KEY);
+            }
+            mForecastAdapter.onRestoreInstanceState(savedInstanceState);
         }
 
         mForecastAdapter.setUseTodayLayout(mUseTodayLayout);
 
         return rootView;
     }
-    public void onLocationChanged(){
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (null != mRecyclerView) {
+            mRecyclerView.clearOnScrollListeners();
+        }
+    }
+
+    public void onLocationChanged() {
         updateWeather();
         getLoaderManager().restartLoader(FORECAST_LOADER, null, this);
     }
 
-    public void setUseTodayLayout(boolean useTodayLayout){
+    public void setUseTodayLayout(boolean useTodayLayout) {
         mUseTodayLayout = useTodayLayout;
-        if(mForecastAdapter != null){
+        if (mForecastAdapter != null) {
             mForecastAdapter.setUseTodayLayout(mUseTodayLayout);
         }
     }
 
-    private void updateWeather(){
+    private void updateWeather() {
         /*SharedPreferences locationPreference = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String loc = locationPreference.getString(getString(R.string.pref_location_key),
                 getString(R.string.pref_location_default));
@@ -311,7 +388,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     }
 
     @Override
-    public void onStart(){
+    public void onStart() {
         super.onStart();
         updateWeather();
     }
@@ -331,7 +408,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     }
 
 
-    private void openPreferredLocationInMap(){
+    private void openPreferredLocationInMap() {
         /*SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String loc = pref.getString(getString(R.string.pref_location_key), getString(R.string.pref_location_default));*/
 
@@ -346,9 +423,9 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
             startActivity(intent);
         }*/
 
-        if ( null != mForecastAdapter ) {
+        if (null != mForecastAdapter) {
             Cursor c = mForecastAdapter.getCursor();
-            if ( null != c ) {
+            if (null != c) {
                 c.moveToPosition(0);
                 String posLat = c.getString(COL_COORD_LAT);
                 String posLong = c.getString(COL_COORD_LONG);
@@ -379,7 +456,6 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         );
 
 
-
         return new CursorLoader(
                 getActivity(),              //Context
                 weatherForLocationUri,      //Uri
@@ -393,20 +469,45 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         mForecastAdapter.swapCursor(data);
-        if(mPosition != RecyclerView.NO_POSITION){
+        if (mPosition != RecyclerView.NO_POSITION) {
             mRecyclerView.smoothScrollToPosition(mPosition);
         }
         updateEmptyView();
+        if (data.getCount() == 0) {
+            getActivity().supportStartPostponedEnterTransition();
+        } else {
+            mRecyclerView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    // Since we know we're going to get items, we keep the listener around until
+                    // we see Children.
+                    if (mRecyclerView.getChildCount() > 0) {
+                        mRecyclerView.getViewTreeObserver().removeOnPreDrawListener(this);
+                        int itemPosition = mForecastAdapter.getSelectedItemPosition();
+                        if (RecyclerView.NO_POSITION == itemPosition) itemPosition = 0;
+                        RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(itemPosition);
+                        if (null != vh && mAutoSelectView) {
+                            mForecastAdapter.selectView(vh);
+                        }
+                        if (mHoldForTransition) {
+                            getActivity().supportStartPostponedEnterTransition();
+                        }
+                        return true;
+                    }
+                    return false;
+                }
+            });
+        }
     }
 
     private void updateEmptyView() {
-        if(mForecastAdapter.getItemCount() == 0){
+        if (mForecastAdapter.getItemCount() == 0) {
             TextView tv = (TextView) getView().findViewById(R.id.recyclerview_forecast_empty);
-            if(null!= tv){
+            if (null != tv) {
                 int message = R.string.no_weather_info;
 
                 @SunshineSyncAdapter.LocationStatus int locationStatus = Utility.getLocationStatus(getActivity());
-                switch (locationStatus){
+                switch (locationStatus) {
                     case SunshineSyncAdapter.LOCATION_STATUS_SERVER_DOWN:
                         message = R.string.empty_forecast_list_server_down;
                         break;
@@ -416,7 +517,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
                     case SunshineSyncAdapter.LOCATION_STATUS_INVALID:
                         message = R.string.empty_forecast_list_invalid_location;
                     default:
-                        if(!Utility.isNetworkAvailable(getActivity())){
+                        if (!Utility.isNetworkAvailable(getActivity())) {
                             message = R.string.no_internet_connection;
                         }
                 }
@@ -428,7 +529,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
-            mForecastAdapter.swapCursor(null);
+        mForecastAdapter.swapCursor(null);
     }
 
 

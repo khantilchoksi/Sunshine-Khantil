@@ -5,11 +5,12 @@
     android:layout_height="match_parent"
     android:elevation="@dimen/appbar_elevation"
     tools:context="com.example.android.sunshine.app.ForecastFragment">
+
     <android.support.v7.widget.RecyclerView
-        style="@style/ForecastListStyle"
-        android:id="@+id/recyclerView_forecast"
+        android:id="@+id/recyclerview_forecast"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+    <!--style="@style/ForecastListStyle"-->
     <!-- empty list -->
     <TextView
         android:id="@+id/recyclerview_forecast_empty"

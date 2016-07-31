@@ -87,7 +87,9 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
     final int DETAIL_LOADER = 0;
 
     static final String DETAIL_URI = "URI";
+    static final String DETAIL_TRANSITION_ANIMATION = "DTA";
     private Uri mUri;
+    private boolean mTransitionAnimation;
 
 //    private ShareActionProvider mShareActionProvider;
     private static final String LOG_TAG = DetailFragment.class.getSimpleName();
@@ -107,6 +109,7 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         Bundle arguments = getArguments();
         if(arguments != null){
             mUri = arguments.getParcelable(DetailFragment.DETAIL_URI);
+            mTransitionAnimation = arguments.getBoolean(DetailFragment.DETAIL_TRANSITION_ANIMATION, false);
         }
 
         View rootView = inflater.inflate(R.layout.fragment_detail_start, container, false);
@@ -278,7 +281,7 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         Toolbar toolbarView = (Toolbar) getView().findViewById(R.id.toolbar);
 
         // We need to start the enter transition after the data has loaded
-        if (activity instanceof DetailActivity) {
+        if (mTransitionAnimation) {
             activity.supportStartPostponedEnterTransition();
 
             if ( null != toolbarView ) {

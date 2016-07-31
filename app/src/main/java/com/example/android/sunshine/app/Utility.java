@@ -34,6 +34,26 @@ public class Utility {
     // back into date objects for comparison/processing.
     public static final String DATE_FORMAT = "yyyyMMdd";
 
+    // We'll default our latlong to 0. Yay, "Earth!"
+    public static float DEFAULT_LATLONG = 0F;
+
+    public static boolean isLatLonAvailable(Context context){
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+        return pref.contains(context.getString(R.string.pref_location_latitude)) &&
+                pref.contains(context.getString(R.string.pref_location_longitude));
+    }
+
+    public static float getLocationLatitude(Context context){
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+        return pref.getFloat(context.getString(R.string.pref_location_latitude), DEFAULT_LATLONG);
+    }
+
+    public static float getLocationLongitude(Context context){
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+        return pref.getFloat(context.getString(R.string.pref_location_longitude), DEFAULT_LATLONG);
+    }
+
+
     /**
      * Helper method to convert the database representation of the date into something to display
      * to users.  As classy and polished a user experience as "20140102" is, we can do better.
