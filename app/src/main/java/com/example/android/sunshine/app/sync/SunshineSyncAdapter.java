@@ -77,6 +77,9 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
     // If you reuse the notification ID, your application will post at most one notification.
     private static final int WEATHER_NOTIFICATION_ID = 3004;
 
+    public static final String ACTION_DATA_UPDATED = "com.example.android.sunshine.app.ACTION_DATA_UPDATED";
+
+
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({LOCATION_STATUS_OK, LOCATION_STATUS_SERVER_DOWN, LOCATION_STATUS_SERVER_INVALID, LOCATION_STATUS_UNKNOWN, LOCATION_STATUS_INVALID})
     public @interface LocationStatus {
@@ -368,6 +371,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
                 Log.d(LOG_TAG, "Sunshine Service Complete." + inserted + "Inserted");
 
+                updateWidgets();
                 notifyWeather();
             }
 
@@ -650,5 +654,13 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putInt(c.getString(R.string.pref_location_status_key), locationStatus);
         editor.commit();
+    }
+
+    private void updateWidgets(){
+        Context context = getContext();
+        // Setting the package ensures that only components in our app will receive the broadcast
+        Intent dataUpdatedIntent = new Intent(ACTION_DATA_UPDATED)
+                .setPackage(context.getPackageName());
+        context.sendBroadcast(dataUpdatedIntent);
     }
 }

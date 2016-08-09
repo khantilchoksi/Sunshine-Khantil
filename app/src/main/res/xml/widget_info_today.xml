@@ -4,6 +4,7 @@
     android:initialLayout="@layout/widget_today_small"
     android:minHeight="@dimen/widget_today_default_height"
     android:minResizeWidth="@dimen/widget_today_default_width"
-    android:updatePeriodMillis="0">
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen">
 
 </appwidget-provider>
